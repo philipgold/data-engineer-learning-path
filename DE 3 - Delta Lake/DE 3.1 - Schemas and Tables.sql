@@ -1,6 +1,6 @@
 -- Databricks notebook source
 -- MAGIC %md-sandbox
--- MAGIC 
+-- MAGIC
 -- MAGIC <div style="text-align: center; line-height: 0; padding-top: 9px;">
 -- MAGIC   <img src="https://databricks.com/wp-content/uploads/2018/03/db-academy-rgb-1200px.png" alt="Databricks Learning" style="width: 600px">
 -- MAGIC </div>
@@ -8,18 +8,18 @@
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
--- MAGIC 
+-- MAGIC
+-- MAGIC
 -- MAGIC # Schemas and Tables on Databricks
 -- MAGIC In this demonstration, you will create and explore schemas and tables.
--- MAGIC 
+-- MAGIC
 -- MAGIC ## Learning Objectives
 -- MAGIC By the end of this lesson, you should be able to:
 -- MAGIC * Use Spark SQL DDL to define schemas and tables
 -- MAGIC * Describe how the **`LOCATION`** keyword impacts the default storage directory
--- MAGIC 
--- MAGIC 
--- MAGIC 
+-- MAGIC
+-- MAGIC
+-- MAGIC
 -- MAGIC **Resources**
 -- MAGIC * <a href="https://docs.databricks.com/user-guide/tables.html" target="_blank">Schemas and Tables - Databricks Docs</a>
 -- MAGIC * <a href="https://docs.databricks.com/user-guide/tables.html#managed-and-unmanaged-tables" target="_blank">Managed and Unmanaged Tables</a>
@@ -30,8 +30,8 @@
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
--- MAGIC 
+-- MAGIC
+-- MAGIC
 -- MAGIC ## Lesson Setup
 -- MAGIC The following script clears out previous runs of this demo and configures some Hive variables that will be used in our SQL queries.
 
@@ -42,7 +42,7 @@
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC ## Schemas
 -- MAGIC Let's start by creating a schema (database).
@@ -50,11 +50,12 @@
 -- COMMAND ----------
 
 CREATE SCHEMA IF NOT EXISTS ${da.schema_name}_default_location;
+CREATE SCHEMA IF NOT EXISTS ${da.schema_name}_custom_location LOCATION '${dap.paths.working_dir}_cusstom_location.db';
 
 -- COMMAND ----------
 
 -- MAGIC %md 
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC Note that the location of the first schema (database) is in the default location under **`dbfs:/user/hive/warehouse/`** and that the schema directory is the name of the schema with the **`.db`** extension
 
@@ -65,12 +66,21 @@ DESCRIBE SCHEMA EXTENDED ${da.schema_name}_default_location;
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC Note that the location of the second schema is in the  directory specified after the **`LOCATION`** keyword
+
+-- COMMAND ----------
+
+DESCRIBE SCHEMA EXTENDED ${da.schema_name}_custom_location;
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ## Managed Tables
--- MAGIC 
+-- MAGIC
 -- MAGIC We will create a **managed** table (by not specifying a path for the location).
--- MAGIC 
+-- MAGIC
 -- MAGIC We will create the table in the schema (database) we created above.
--- MAGIC 
+-- MAGIC
 -- MAGIC Note that the table schema must be defined because there is no data from which to infer the table's columns and data types
 
 -- COMMAND ----------
@@ -85,7 +95,7 @@ SELECT * FROM managed_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC We can look at the extended table description to find the location (you'll need to scroll down in the results).
 
@@ -96,10 +106,10 @@ DESCRIBE DETAIL managed_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
--- MAGIC 
+-- MAGIC
+-- MAGIC
 -- MAGIC By default, **managed** tables in a schema without the location specified will be created in the **`dbfs:/user/hive/warehouse/<schema_name>.db/`** directory.
--- MAGIC 
+-- MAGIC
 -- MAGIC We can see that, as expected, the data and metadata for our table are stored in that location.
 
 -- COMMAND ----------
@@ -107,14 +117,14 @@ DESCRIBE DETAIL managed_table;
 -- MAGIC %python 
 -- MAGIC tbl_location = spark.sql(f"DESCRIBE DETAIL managed_table").first().location
 -- MAGIC print(tbl_location)
--- MAGIC 
+-- MAGIC
 -- MAGIC files = dbutils.fs.ls(tbl_location)
 -- MAGIC display(files)
 
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC Drop the table.
 
@@ -125,7 +135,7 @@ DROP TABLE managed_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC Note the table's directory and its log and data files are deleted. Only the schema (database) directory remains.
 
@@ -139,11 +149,11 @@ DROP TABLE managed_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC ## External Tables
 -- MAGIC Next, we will create an **external** (unmanaged) table from sample data. 
--- MAGIC 
+-- MAGIC
 -- MAGIC The data we are going to use are in CSV format. We want to create a Delta table with a **`LOCATION`** provided in the directory of our choice.
 
 -- COMMAND ----------
@@ -163,7 +173,7 @@ SELECT * FROM external_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC Let's note the location of the table's data in this lesson's working directory.
 
@@ -174,7 +184,7 @@ DESCRIBE TABLE EXTENDED external_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC Now, we drop the table.
 
@@ -185,7 +195,7 @@ DROP TABLE external_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC  
 -- MAGIC The table definition no longer exists in the metastore, but the underlying data remain intact.
 
@@ -199,7 +209,7 @@ DROP TABLE external_table;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC ## Clean up
 -- MAGIC Drop the schema.
 
@@ -210,13 +220,30 @@ DROP SCHEMA ${da.schema_name}_default_location CASCADE;
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC 
+-- MAGIC
 -- MAGIC Run the following cell to delete the tables and files associated with this lesson.
 
 -- COMMAND ----------
 
 -- MAGIC %python 
 -- MAGIC DA.cleanup()
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC
+-- MAGIC ## Validate Your Knowledge
+-- MAGIC
+-- MAGIC **1) A data engineer needs to create the new database clients at a location represented by the variable path. The database will only contain JSON files.**
+-- MAGIC
+-- MAGIC Which of the following commands does the data engineer need to run to complete this task? Select two responses.
+-- MAGIC
+-- MAGIC  
+-- MAGIC 1. CREATE DATABASE clients LOCATION '${path}';
+-- MAGIC 2. CREATE SCHEMA clients LOCATION '${path}';
+-- MAGIC 3. CREATE DATABASE IF NOT EXISTS clients '${path}';
+-- MAGIC 4. CREATE DATABASE clients DELTA json. '${path}';
+-- MAGIC 5. CREATE SCHEMA IF NOT EXISTS clients json. '${path}';
 
 -- COMMAND ----------
 
