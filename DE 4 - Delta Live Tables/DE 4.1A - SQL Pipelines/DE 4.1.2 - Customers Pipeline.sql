@@ -1,6 +1,6 @@
 -- Databricks notebook source
 -- MAGIC %md-sandbox
--- MAGIC 
+-- MAGIC
 -- MAGIC <div style="text-align: center; line-height: 0; padding-top: 9px;">
 -- MAGIC   <img src="https://databricks.com/wp-content/uploads/2018/03/db-academy-rgb-1200px.png" alt="Databricks Learning" style="width: 600px">
 -- MAGIC </div>
@@ -9,9 +9,9 @@
 
 -- MAGIC %md
 -- MAGIC # More DLT SQL Syntax
--- MAGIC 
+-- MAGIC
 -- MAGIC DLT Pipelines make it easy to combine multiple datasets into a single scalable workload using one or many notebooks.
--- MAGIC 
+-- MAGIC
 -- MAGIC In the last notebook, we reviewed some of the basic functionality of DLT syntax while processing data from cloud object storage through a series of queries to validate and enrich records at each step. This notebook similarly follows the medallion architecture, but introduces a number of new concepts.
 -- MAGIC * Raw records represent change data capture (CDC) information about customers 
 -- MAGIC * The bronze table again uses Auto Loader to ingest JSON data from cloud object storage
@@ -19,9 +19,9 @@
 -- MAGIC * **`APPLY CHANGES INTO`** is used to automatically process CDC data into the silver layer as a Type 1 <a href="https://en.wikipedia.org/wiki/Slowly_changing_dimension" target="_blank">slowly changing dimension (SCD) table<a/>
 -- MAGIC * A gold table is defined to calculate an aggregate from the current version of this Type 1 table
 -- MAGIC * A view is defined that joins with tables defined in another notebook
--- MAGIC 
+-- MAGIC
 -- MAGIC ## Learning Objectives
--- MAGIC 
+-- MAGIC
 -- MAGIC By the end of this lesson, students should feel comfortable:
 -- MAGIC * Processing CDC data with **`APPLY CHANGES INTO`**
 -- MAGIC * Declaring live views
@@ -33,11 +33,11 @@
 
 -- MAGIC %md
 -- MAGIC ## Ingest Data with Auto Loader
--- MAGIC 
+-- MAGIC
 -- MAGIC As in the last notebook, we define a bronze table against a data source configured with Auto Loader.
--- MAGIC 
+-- MAGIC
 -- MAGIC Note that the code below omits the Auto Loader option to infer schema. When data is ingested from JSON without the schema provided or inferred, fields will have the correct names but will all be stored as **`STRING`** type.
--- MAGIC 
+-- MAGIC
 -- MAGIC The code below also provides a simple comment and adds fields for time of data ingestion and the file name for each record.
 
 -- COMMAND ----------
@@ -51,31 +51,31 @@ FROM cloud_files("${source}/customers", "json")
 
 -- MAGIC %md
 -- MAGIC ## Quality Enforcement Continued
--- MAGIC 
+-- MAGIC
 -- MAGIC The query below demonstrates:
 -- MAGIC * The 3 options for behavior when constraints are violated
 -- MAGIC * A query with multiple constraints
 -- MAGIC * Multiple conditions provided to one constraint
 -- MAGIC * Using a built-in SQL function in a constraint
--- MAGIC 
+-- MAGIC
 -- MAGIC About the data source:
 -- MAGIC * Data is a CDC feed that contains **`INSERT`**, **`UPDATE`**, and **`DELETE`** operations. 
 -- MAGIC * Update and insert operations should contain valid entries for all fields.
 -- MAGIC * Delete operations should contain **`NULL`** values for all fields other than the timestamp, **`customer_id`**, and operation fields.
--- MAGIC 
+-- MAGIC
 -- MAGIC In order to ensure only good data makes it into our silver table, we'll write a series of quality enforcement rules that ignore the expected null values in delete operations.
--- MAGIC 
+-- MAGIC
 -- MAGIC We'll break down each of these constraints below:
--- MAGIC 
+-- MAGIC
 -- MAGIC ##### **`valid_id`**
 -- MAGIC This constraint will cause our transaction to fail if a record contains a null value in the **`customer_id`** field.
--- MAGIC 
+-- MAGIC
 -- MAGIC ##### **`valid_operation`**
 -- MAGIC This contraint will drop any records that contain a null value in the **`operation`** field.
--- MAGIC 
+-- MAGIC
 -- MAGIC ##### **`valid_address`**
 -- MAGIC This constraint checks if the **`operation`** field is **`DELETE`**; if not, it checks for null values in any of the 4 fields comprising an address. Because there is no additional instruction for what to do with invalid records, violating rows will be recorded in metrics but not dropped.
--- MAGIC 
+-- MAGIC
 -- MAGIC ##### **`valid_email`**
 -- MAGIC This constraint uses regex pattern matching to check that the value in the **`email`** field is a valid email address. It contains logic to not apply this to records if the **`operation`** field is **`DELETE`** (because these will have a null value for the **`email`** field). Violating records are dropped.
 
@@ -101,9 +101,9 @@ AS SELECT *
 
 -- MAGIC %md
 -- MAGIC ## Processing CDC Data with **`APPLY CHANGES INTO`**
--- MAGIC 
+-- MAGIC
 -- MAGIC DLT introduces a new syntactic structure for simplifying CDC feed processing.
--- MAGIC 
+-- MAGIC
 -- MAGIC **`APPLY CHANGES INTO`** has the following guarantees and requirements:
 -- MAGIC * Performs incremental/streaming ingestion of CDC data
 -- MAGIC * Provides simple syntax to specify one or many fields as the primary key for a table
@@ -112,7 +112,7 @@ AS SELECT *
 -- MAGIC * Automatically orders late-arriving records using user-provided sequencing key
 -- MAGIC * Uses a simple syntax for specifying columns to ignore with the **`EXCEPT`** keyword
 -- MAGIC * Will default to applying changes as Type 1 SCD
--- MAGIC 
+-- MAGIC
 -- MAGIC The code below:
 -- MAGIC * Creates the **`customers_silver`** table; **`APPLY CHANGES INTO`** requires the target table to be declared in a separate statement
 -- MAGIC * Identifies the **`customers_silver`** table as the target into which the changes will be applied
@@ -137,13 +137,13 @@ APPLY CHANGES INTO LIVE.customers_silver
 
 -- MAGIC %md
 -- MAGIC ## Querying Tables with Applied Changes
--- MAGIC 
+-- MAGIC
 -- MAGIC **`APPLY CHANGES INTO`** defaults to creating a Type 1 SCD table, meaning that each unique key will have at most 1 record and that updates will overwrite the original information.
--- MAGIC 
+-- MAGIC
 -- MAGIC While the target of our operation in the previous cell was defined as a streaming live table, data is being updated and deleted in this table (and so breaks the append-only requirements for streaming live table sources). As such, downstream operations cannot perform streaming queries against this table. 
--- MAGIC 
+-- MAGIC
 -- MAGIC This pattern ensures that if any updates arrive out of order, downstream results can be properly recomputed to reflect updates. It also ensures that when records are deleted from a source table, these values are no longer reflected in tables later in the pipeline.
--- MAGIC 
+-- MAGIC
 -- MAGIC Below, we define a simple aggregate query to create a live table from the data in the **`customers_silver`** table.
 
 -- COMMAND ----------
@@ -158,27 +158,27 @@ AS SELECT state, count(*) as customer_count, current_timestamp() updated_at
 
 -- MAGIC %md
 -- MAGIC ## DLT Views
--- MAGIC 
+-- MAGIC
 -- MAGIC The query below defines a DLT view by replacing **`TABLE`** with the **`VIEW`** keyword.
--- MAGIC 
+-- MAGIC
 -- MAGIC Views in DLT differ from persisted tables, and can optionally be defined as **`STREAMING`**.
--- MAGIC 
+-- MAGIC
 -- MAGIC Views have the same update guarantees as live tables, but the results of queries are not stored to disk.
--- MAGIC 
+-- MAGIC
 -- MAGIC Unlike views used elsewhere in Databricks, DLT views are not persisted to the metastore, meaning that they can only be referenced from within the DLT pipeline they are a part of. (This is similar scoping to temporary views in most SQL systems.)
--- MAGIC 
+-- MAGIC
 -- MAGIC Views can still be used to enforce data quality, and metrics for views will be collected and reported as they would be for tables.
--- MAGIC 
+-- MAGIC
 -- MAGIC ## Joins and Referencing Tables Across Notebook Libraries
--- MAGIC 
+-- MAGIC
 -- MAGIC The code we've reviewed thus far has shown 2 source datasets propagating through a series of steps in separate notebooks.
--- MAGIC 
+-- MAGIC
 -- MAGIC DLT supports scheduling multiple notebooks as part of a single DLT Pipeline configuration. You can edit existing DLT pipelines to add additional notebooks.
--- MAGIC 
+-- MAGIC
 -- MAGIC Within a DLT Pipeline, code in any notebook library can reference tables and views created in any other notebook library.
--- MAGIC 
+-- MAGIC
 -- MAGIC Essentially, we can think of the scope of the schema reference by the **`LIVE`** keyword to be at the DLT Pipeline level, rather than the individual notebook.
--- MAGIC 
+-- MAGIC
 -- MAGIC In the query below, we create a new view by joining the silver tables from our **`orders`** and **`customers`** datasets. Note that this view is not defined as streaming; as such, we will always capture the current valid **`email`** for each customer, and will automatically drop records for customers after they've been deleted from the **`customers_silver`** table.
 
 -- COMMAND ----------
@@ -194,16 +194,16 @@ CREATE LIVE VIEW subscribed_order_emails_v
 
 -- MAGIC %md
 -- MAGIC ## Adding this Notebook to a DLT Pipeline
--- MAGIC 
+-- MAGIC
 -- MAGIC Adding additional notebook libraries to an existing pipeline is accomplished easily with the DLT UI.
--- MAGIC 
+-- MAGIC
 -- MAGIC 1. Navigate to the DLT Pipeline you configured earlier in the course
 -- MAGIC 1. Click the **Settings** button in the top right
 -- MAGIC 1. Under **Notebook Libraries**, click **Add notebook library**
 -- MAGIC    * Use the file picker to select this notebook, then click **Select**
 -- MAGIC 1. Click the **Save** button to save your updates
 -- MAGIC 1. Click the blue **Start** button in the top right of the screen to update your pipeline and process any new records
--- MAGIC 
+-- MAGIC
 -- MAGIC <img src="https://files.training.databricks.com/images/icon_hint_24.png"> The link to this notebook can be found back in [DE 4.1 - DLT UI Walkthrough]($../DE 4.1 - DLT UI Walkthrough)<br/>
 -- MAGIC in the printed instructions for **Task #2** under the section **Generate Pipeline Configuration**
 
@@ -211,20 +211,97 @@ CREATE LIVE VIEW subscribed_order_emails_v
 
 -- MAGIC %md
 -- MAGIC ## Summary
--- MAGIC 
+-- MAGIC
 -- MAGIC By reviewing this notebook, you should now feel comfortable:
 -- MAGIC * Processing CDC data with **`APPLY CHANGES INTO`**
 -- MAGIC * Declaring live views
 -- MAGIC * Joining live tables
 -- MAGIC * Describing how DLT library notebooks work together in a pipeline
 -- MAGIC * Scheduling multiple notebooks in a DLT pipeline
--- MAGIC 
+-- MAGIC
 -- MAGIC In the next notebook, explore the output of our pipeline. Then we'll take a look at how to iteratively develop and troubleshoot DLT code.
 
 -- COMMAND ----------
 
--- MAGIC %md-sandbox
--- MAGIC &copy; 2023 Databricks, Inc. All rights reserved.<br/>
--- MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="https://www.apache.org/">Apache Software Foundation</a>.<br/>
--- MAGIC <br/>
--- MAGIC <a href="https://databricks.com/privacy-policy">Privacy Policy</a> | <a href="https://databricks.com/terms-of-use">Terms of Use</a> | <a href="https://help.databricks.com/">Support</a>
+-- MAGIC %md
+-- MAGIC ## Validate Your Knowledge
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC
+-- MAGIC Which of the following correctly describes how code from one library notebook can be referenced by code from another library notebook? Select one response.
+-- MAGIC
+-- MAGIC - Within a DLT Pipeline, code in a notebook library can reference tables and views created in another notebook library that is running on the same cluster.
+-- MAGIC
+-- MAGIC - Within a DLT Pipeline, code in a notebook library can reference tables and views created in another notebook library as long as one notebook library references the other notebook library.
+-- MAGIC
+-- MAGIC - Within a DLT Pipeline, code in a notebook library can reference tables and views created in another notebook library as long as the referenced notebook library is installed on the other notebook library’s cluster.
+-- MAGIC
+-- MAGIC - Within a DLT Pipeline, code in notebook libraries cannot reference tables and views created in a different notebook library.
+-- MAGIC
+-- MAGIC - Within a DLT Pipeline, code in any notebook library can reference tables and views created in any other notebook library.
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC
+-- MAGIC A data engineer has a Delta Live Tables (DLT) pipeline that uses a change data capture (CDC) data source. They need to write a quality enforcement rule that ensures that records containing the values **INSERT** or **UPDATE** in the **operation** column cannot contain a null value in the **name** column. The **operation** column can contain one of three values: **INSERT**, **UPDATE**, and **DELETE**. If the constraint is violated, then the entire transaction needs to fail.  
+-- MAGIC
+-- MAGIC Which of the following constraints can the data engineer use to enforce this rule? Select one response.
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_name EXPECT (name IS NOT NULL or operation = "DELETE") ON VIOLATION DROP ROW
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_id_not_null EXPECT (valid_id IS NOT NULL or operation = "INSERT")ON VIOLATION FAIL UPDATE
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation EXPECT (operation IS NOT NULL) ON VIOLATION DROP ROW
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation EXPECT (valid_operation IS NOT NULL and valid_operation = "INSERT") ON VIOLATION DROP ROW
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_name EXPECT (name IS NOT NULL or operation = "DELETE") ON VIOLATION FAIL UPDATE
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC
+-- MAGIC A data engineer has a Delta Live Tables (DLT) pipeline that uses a change data capture (CDC) data source. They need to write a quality enforcement rule that ensures that values in the column **operation** do not contain null values. If the constraint is violated, the associated records cannot be included in the dataset. 
+-- MAGIC
+-- MAGIC Which of the following constraints does the data engineer need to use to enforce this rule? Select two responses.
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation EXPECT (operation IS NOT NULL) ON VIOLATION DROP ROW
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation EXPECT (operation IS NOT NULL)
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation EXCEPT (operation != null) ON VIOLATION FAIL UPDATE
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation EXCEPT (operation) ON VIOLATION DROP ROW
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation ON VIOLATION FAIL UPDATE
+-- MAGIC
+-- MAGIC - CONSTRAINT valid_operation EXCEPT (operation) ON VIOLATION DROP ROW
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC Which of the following statements accurately describes the difference in behavior between live views and live tables? Select one response.
+-- MAGIC
+-- MAGIC - The results of live tables can be viewed through a Directed Acyclic Graph (DAG), while the results for live views cannot.
+-- MAGIC
+-- MAGIC - The results of live tables are stored to disk, while the results of views can only be referenced from within the DLT pipeline in which they are defined.
+-- MAGIC
+-- MAGIC - Live tables can be used to enforce data quality, while views do not have the same guarantees in schema enforcement.
+-- MAGIC
+-- MAGIC - Live tables can be used with a stream as its source, while live views are incompatible with structured streaming.
+-- MAGIC
+-- MAGIC - Metrics for live tables can be collected and reported, while data quality metrics for views are abstracted to the user.
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC Which of the following are guaranteed when processing a change data capture (CDC) feed with **APPLY CHANGES INTO**? Select three responses.
+-- MAGIC
+-- MAGIC - **APPLY CHANGES INTO** defaults to creating a Type 1 SCD table.
+-- MAGIC - **APPLY CHANGES INTO** automatically quarantines late-arriving data in a separate table.
+-- MAGIC - **APPLY CHANGES INTO** supports insert-only and append-only data.
+-- MAGIC - **APPLY CHANGES INTO** assumes by default that rows will contain inserts and updates.
+-- MAGIC - **APPLY CHANGES INTO** automatically orders late-arriving records using a user-provided sequencing key.

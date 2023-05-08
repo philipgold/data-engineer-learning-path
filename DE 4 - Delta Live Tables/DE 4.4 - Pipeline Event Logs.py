@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md-sandbox
-# MAGIC 
+# MAGIC
 # MAGIC <div style="text-align: center; line-height: 0; padding-top: 9px;">
 # MAGIC   <img src="https://databricks.com/wp-content/uploads/2018/03/db-academy-rgb-1200px.png" alt="Databricks Learning" style="width: 600px">
 # MAGIC </div>
@@ -9,9 +9,9 @@
 
 # MAGIC %md
 # MAGIC # Exploring the Pipeline Events Logs
-# MAGIC 
+# MAGIC
 # MAGIC DLT uses the event logs to store much of the important information used to manage, report, and understand what's happening during pipeline execution.
-# MAGIC 
+# MAGIC
 # MAGIC Below, we provide a number of useful queries to explore the event log and gain greater insight into your DLT pipelines.
 
 # COMMAND ----------
@@ -23,7 +23,7 @@
 # MAGIC %md
 # MAGIC ## Query Event Log
 # MAGIC The event log is managed as a Delta Lake table with some of the more important fields stored as nested JSON data.
-# MAGIC 
+# MAGIC
 # MAGIC The query below shows how simple it is to read this table and created a DataFrame and temporary view for interactive querying.
 
 # COMMAND ----------
@@ -39,9 +39,9 @@ display(event_log)
 
 # MAGIC %md
 # MAGIC ## Set Latest Update ID
-# MAGIC 
+# MAGIC
 # MAGIC In many cases, you may wish to gain updates about the latest update (or the last N updates) to your pipeline.
-# MAGIC 
+# MAGIC
 # MAGIC We can easily capture the most recent update ID with a SQL query.
 
 # COMMAND ----------
@@ -61,9 +61,9 @@ spark.conf.set('latest_update.id', latest_update_id)
 
 # MAGIC %md
 # MAGIC ## Perform Audit Logging
-# MAGIC 
+# MAGIC
 # MAGIC Events related to running pipelines and editing configurations are captured as **`user_action`**.
-# MAGIC 
+# MAGIC
 # MAGIC Yours should be the only **`user_name`** for the pipeline you configured during this lesson.
 
 # COMMAND ----------
@@ -77,9 +77,9 @@ spark.conf.set('latest_update.id', latest_update_id)
 
 # MAGIC %md
 # MAGIC ## Examine Lineage
-# MAGIC 
+# MAGIC
 # MAGIC DLT provides built-in lineage information for how data flows through your table.
-# MAGIC 
+# MAGIC
 # MAGIC While the query below only indicates the direct predecessors for each table, this information can easily be combined to trace data in any table back to the point it entered the lakehouse.
 
 # COMMAND ----------
@@ -94,9 +94,9 @@ spark.conf.set('latest_update.id', latest_update_id)
 
 # MAGIC %md
 # MAGIC ## Examine Data Quality Metrics
-# MAGIC 
+# MAGIC
 # MAGIC Finally, data quality metrics can be extremely useful for both long term and short term insights into your data.
-# MAGIC 
+# MAGIC
 # MAGIC Below, we capture the metrics for each constraint throughout the entire lifetime of our table.
 
 # COMMAND ----------
@@ -119,8 +119,70 @@ spark.conf.set('latest_update.id', latest_update_id)
 
 # COMMAND ----------
 
-# MAGIC %md-sandbox
-# MAGIC &copy; 2023 Databricks, Inc. All rights reserved.<br/>
-# MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="https://www.apache.org/">Apache Software Foundation</a>.<br/>
-# MAGIC <br/>
-# MAGIC <a href="https://databricks.com/privacy-policy">Privacy Policy</a> | <a href="https://databricks.com/terms-of-use">Terms of Use</a> | <a href="https://help.databricks.com/">Support</a>
+# MAGIC %md
+# MAGIC
+# MAGIC ## Validate Your Knowledge
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC **A data engineer wants to query metrics on the latest update made to their pipeline. They need to be able to see the event type and timestamp for each update.**
+# MAGIC
+# MAGIC Which of the following approaches allows the data engineer to complete this task? Select one response.
+# MAGIC
+# MAGIC - The data engineer can query the update ID from the events log where the event type is **create_update**.
+# MAGIC
+# MAGIC - The data engineer can query the update ID from the events log where the action type is **user_action**.
+# MAGIC
+# MAGIC - The data engineer can view the update ID from the Pipeline Details page in the **user_action** table.
+# MAGIC
+# MAGIC - The data engineer can query the update ID from the events log where the event type is **last_update**.
+# MAGIC
+# MAGIC - The data engineer can view the update ID from the Pipeline Details page in the **create_update** table.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Which of the following data quality metrics are captured through **row_epectations** in a pipeline’s event log? Select three responses.
+# MAGIC
+# MAGIC - Update ID
+# MAGIC - Name
+# MAGIC - Failed records
+# MAGIC - Flow progress
+# MAGIC - Dataset
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC A data engineer needs to examine how data is flowing through tables within their pipeline.
+# MAGIC
+# MAGIC Which of the following correctly describes how they can accomplish this? Select one response.
+# MAGIC
+# MAGIC - The data engineer can query the flow definition for the direct successor of the table and then combine the results.
+# MAGIC
+# MAGIC - The data engineer can view the flow definition of each table in the pipeline from the Pipeline Events log.
+# MAGIC
+# MAGIC - The data engineer can query the flow definition for each table and then combine the results.
+# MAGIC
+# MAGIC - The data engineer can query the flow definition for the direct predecessor of each table and then combine the results.
+# MAGIC
+# MAGIC - The data engineer can combine the flow definitions for all of the tables into one query.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC A data engineer needs to review the events related to their pipeline and the pipeline’s configurations.
+# MAGIC
+# MAGIC Which of the following approaches can the data engineer take to accomplish this? Select one response.
+# MAGIC
+# MAGIC - The data engineer can select events of type **user_action** in the resultant DAG.
+# MAGIC
+# MAGIC - The data engineer can select events of type **user_action** in the output table of the pipeline.
+# MAGIC
+# MAGIC - The data engineer can query events of type **user_action** from the configured storage location.
+# MAGIC
+# MAGIC - The data engineer can query events of type **user_action** from the checkpoint directory.
+# MAGIC
+# MAGIC - The data engineer can query events of type **user_action** from the event log.

@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md-sandbox
-# MAGIC 
+# MAGIC
 # MAGIC <div style="text-align: center; line-height: 0; padding-top: 9px;">
 # MAGIC   <img src="https://databricks.com/wp-content/uploads/2018/03/db-academy-rgb-1200px.png" alt="Databricks Learning" style="width: 600px">
 # MAGIC </div>
@@ -9,11 +9,11 @@
 
 # MAGIC %md
 # MAGIC # Exploring the Results of a DLT Pipeline
-# MAGIC 
-# MAGIC 
-# MAGIC 
+# MAGIC
+# MAGIC
+# MAGIC
 # MAGIC While DLT abstracts away many of the complexities associated with running production ETL on Databricks, many folks may wonder what's actually happening under the hood.
-# MAGIC 
+# MAGIC
 # MAGIC In this notebook, we'll avoid getting too far into the weeds, but will explore how data and metadata are persisted by DLT.
 
 # COMMAND ----------
@@ -24,23 +24,23 @@
 
 # MAGIC %md
 # MAGIC ## Querying Tables in the Target Database
-# MAGIC 
+# MAGIC
 # MAGIC As long as a target database is specified during DLT Pipeline configuration, tables should be available to users throughout your Databricks environment.
-# MAGIC 
+# MAGIC
 # MAGIC Run the cell below to see the tables registered to the database used in this demo.
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC USE ${DA.schema_name};
-# MAGIC 
+# MAGIC
 # MAGIC SHOW TABLES;
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC Note that the view we defined in our pipeline is absent from our tables list.
-# MAGIC 
+# MAGIC
 # MAGIC Query results from the **`orders_bronze`** table.
 
 # COMMAND ----------
@@ -51,18 +51,18 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC 
+# MAGIC
 # MAGIC Recall that **`orders_bronze`** was defined as a streaming live table in DLT, but our results here are static.
-# MAGIC 
+# MAGIC
 # MAGIC Because DLT uses Delta Lake to store all tables, each time a query is executed, we will always return the most recent version of the table. But queries outside of DLT will return snapshot results from DLT tables, regardless of how they were defined.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Examine Results of `APPLY CHANGES INTO`
-# MAGIC 
+# MAGIC
 # MAGIC Recall that the **customers_silver** table was implemented with changes from a CDC feed applied as Type 1 SCD.
-# MAGIC 
+# MAGIC
 # MAGIC Let's query this table below.
 
 # COMMAND ----------
@@ -74,9 +74,9 @@
 
 # MAGIC %md
 # MAGIC Note the **`customers_silver`** table correctly represents the current active state of our Type 1 table with changes applied, but does not include the additional fields seen in the schema shown in the DLT UI: **__Timestamp**, **__DeleteVersion**, and **__UpsertVersion**.
-# MAGIC 
+# MAGIC
 # MAGIC This is because our **customers_silver** table is actually implemented as a view against a hidden table named **__apply_changes_storage_customers_silver**.
-# MAGIC 
+# MAGIC
 # MAGIC We can see this if we run **`DESCRIBE EXTENDED`**.
 
 # COMMAND ----------
@@ -98,7 +98,7 @@
 
 # MAGIC %md
 # MAGIC ## Examining Data Files
-# MAGIC 
+# MAGIC
 # MAGIC Run the following cell to look at the files in the configured **Storage location**.
 
 # COMMAND ----------
@@ -110,7 +110,7 @@ display(files)
 
 # MAGIC %md
 # MAGIC The **autoloader** and **checkpoint** directories contain data used to manage incremental data processing with Structured Streaming.
-# MAGIC 
+# MAGIC
 # MAGIC The **system** directory captures events associated with the pipeline.
 
 # COMMAND ----------
@@ -131,7 +131,7 @@ display(spark.sql(f"SELECT * FROM delta.`{DA.paths.storage_location}/system/even
 
 # MAGIC %md
 # MAGIC We'll dive deeper into the metrics in the notebook that follows.
-# MAGIC 
+# MAGIC
 # MAGIC Let's view the contents of the **tables** directory.
 
 # COMMAND ----------
@@ -143,6 +143,29 @@ display(files)
 
 # MAGIC %md
 # MAGIC Each of these directories contains a Delta Lake table being managed by DLT.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #Validate Your Knowledge 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC A data engineer needs to query a Delta Live Table (DLT) in a notebook. The notebook is not attached to a DLT pipeline.
+# MAGIC
+# MAGIC Which of the following correctly describes the form of results that the query returns? Select one response.
+# MAGIC
+# MAGIC - Live queries outside of DLT will return snapshot results from DLT tables only if they were defined as a batch table.
+# MAGIC
+# MAGIC - Queries outside of DLT will return snapshot results from DLT tables only if they were defined as a streaming table
+# MAGIC
+# MAGIC - Queries outside of DLT will return the most recent version from DLT tables only if they were defined as a streaming table
+# MAGIC
+# MAGIC - Queries outside of DLT will return snapshot results from DLT tables, regardless of how they were defined.
+# MAGIC
+# MAGIC - Queries outside of DLT will return the most recent version from DLT tables, regardless of how they were defined.
 
 # COMMAND ----------
 
